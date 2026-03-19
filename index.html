@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" href="mask.png" type="image/png" />
+		<title>MASCE - Markus Autobahn Speed Calculator for EVs</title>
+		<style>
+			:root {
+				color-scheme: only dark;
+				--bg: #05060d;
+				--bg-2: #0b1022;
+				--ink: #eaf7ff;
+				--muted: #8aa2b8;
+				--accent: #23d7ff;
+				--accent-2: #ff4ddb;
+				--panel: rgba(10, 16, 34, 0.92);
+				--line: rgba(35, 215, 255, 0.22);
+				--shadow: 0 18px 50px rgba(7, 247, 255, 0.12);
+				--chart-bg: radial-gradient(circle at 20% 20%, rgba(35, 215, 255, 0.08), transparent 45%),
+					linear-gradient(140deg, #0b1024 0%, #05060d 100%);
+				--chart-grid: rgba(45, 88, 120, 0.45);
+				--chart-text: #9fb6cc;
+				--chart-raw: rgba(160, 180, 196, 0.65);
+				--chart-line: #23d7ff;
+				--chart-peak: #ff4ddb;
+			}
+
+			* {
+				box-sizing: border-box;
+			}
+
+			body {
+				margin: 0;
+				font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+				font-size: 14px;
+				color: var(--ink);
+				background: radial-gradient(circle at top, rgba(35, 215, 255, 0.08) 0%, var(--bg) 45%, var(--bg-2) 100%);
+				min-height: 100vh;
+			}
+
+			.page {
+				max-width: 1200px;
+				margin: 0 auto;
+				padding: 28px 20px 48px;
+			}
+
+			header {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 16px;
+				margin-bottom: 20px;
+			}
+
+			.header-actions {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				flex-wrap: wrap;
+				justify-content: flex-end;
+			}
+
+			.title {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				font-size: clamp(1.4rem, 1.6vw + 1rem, 2.2rem);
+				letter-spacing: -0.02em;
+				margin: 0;
+			}
+
+			.title-icon {
+				width: 66px;
+				height: 66px;
+				display: inline-block;
+				filter: drop-shadow(0 6px 18px rgba(35, 215, 255, 0.35));
+			}
+
+			.subtitle {
+				margin: 6px 0 0;
+				color: var(--muted);
+				max-width: 460px;
+			}
+
+			.badge {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+				padding: 6px 12px;
+				border-radius: 999px;
+				background: #ffffff;
+				border: 1px solid var(--line);
+				font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", "Courier New", monospace;
+				font-size: 0.72rem;
+				color: var(--accent);
+			}
+
+			.layout {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 20px;
+				align-items: stretch;
+			}
+
+			.inputs-panel .input-grid {
+				display: grid;
+				grid-template-columns: repeat(3, minmax(0, 1fr));
+				gap: 14px;
+			}
+
+			.inputs-panel .input-group {
+				min-width: 0;
+			}
+
+			.user-entry {
+				padding: 10px;
+				border-radius: 12px;
+				border: 1px solid rgba(255, 77, 219, 0.55);
+				background: rgba(255, 77, 219, 0.08);
+			}
+
+			.user-entry label {
+				color: var(--ink);
+			}
+
+			.user-badge {
+				display: inline-flex;
+				align-items: center;
+				padding: 2px 8px;
+				margin-left: 8px;
+				border-radius: 999px;
+				font-size: 0.64rem;
+				letter-spacing: 0.03em;
+				text-transform: uppercase;
+				color: #ffb8ef;
+				border: 1px solid rgba(255, 77, 219, 0.55);
+				background: rgba(255, 77, 219, 0.16);
+			}
+
+			.panel {
+				background: var(--panel);
+				border-radius: 18px;
+				padding: 18px;
+				box-shadow: var(--shadow);
+				border: 1px solid rgba(35, 215, 255, 0.2);
+				backdrop-filter: blur(12px);
+			}
+
+			.panel h2 {
+				margin: 0 0 12px;
+				font-size: 1rem;
+			}
+
+			.field {
+				display: grid;
+				gap: 6px;
+				margin-bottom: 12px;
+			}
+
+			.field-row {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 10px;
+				margin-bottom: 12px;
+			}
+
+			.field-row .field {
+				margin-bottom: 0;
+				min-width: 0;
+			}
+
+			.field-row input,
+			.field-row select {
+				width: 100%;
+			}
+
+			.group-title {
+				font-size: 0.78rem;
+				font-weight: 600;
+				letter-spacing: 0.02em;
+				text-transform: uppercase;
+				color: var(--chart-text);
+				margin: 14px 0 6px;
+			}
+
+			label {
+				font-size: 0.78rem;
+				color: var(--muted);
+			}
+
+			input,
+			select {
+				border-radius: 10px;
+				border: 1px solid var(--line);
+				font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", "Courier New", monospace;
+				background: rgba(8, 12, 24, 0.9);
+				color: var(--ink);
+				box-shadow: inset 0 0 0 1px rgba(35, 215, 255, 0.08);
+			}
+
+			input {
+				padding: 8px 10px;
+				font-size: 0.82rem;
+			}
+
+			select {
+				padding: 10px 12px;
+				font-size: 0.92rem;
+			}
+
+			.header-actions select {
+				padding: 14px 18px;
+				font-size: 1.12rem;
+				min-height: 52px;
+			}
+
+			.header-actions button {
+				padding: 14px 22px;
+				font-size: 1.02rem;
+				min-height: 52px;
+			}
+
+			input:focus {
+				outline: 2px solid rgba(35, 215, 255, 0.35);
+				border-color: var(--accent);
+			}
+
+			button {
+				padding: 10px 14px;
+				border-radius: 999px;
+				border: 1px solid rgba(35, 215, 255, 0.6);
+				background: linear-gradient(120deg, rgba(35, 215, 255, 0.9), rgba(255, 77, 219, 0.9));
+				color: #051018;
+				font-size: 0.85rem;
+				font-weight: 600;
+				cursor: pointer;
+				box-shadow: 0 8px 20px rgba(35, 215, 255, 0.25);
+			}
+
+			button:hover {
+				background: linear-gradient(120deg, rgba(35, 215, 255, 1), rgba(255, 77, 219, 1));
+			}
+
+			.hint {
+				font-size: 0.72rem;
+				color: var(--muted);
+			}
+
+			.plot-wrap {
+				display: flex;
+				flex-direction: column;
+				gap: 8px;
+				height: 100%;
+			}
+
+			.legend {
+				display: flex;
+				align-items: center;
+				gap: 12px;
+				font-size: 0.78rem;
+				color: var(--muted);
+			}
+
+			.legend span {
+				display: inline-flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.legend i {
+				width: 24px;
+				height: 0;
+				border-top: 3px solid var(--accent);
+			}
+
+			.legend i.raw {
+				border-top: 2px dashed rgba(160, 180, 196, 0.7);
+			}
+
+			.drive-summary {
+				margin-top: 14px;
+				border-radius: 12px;
+				border: 1px solid rgba(35, 215, 255, 0.22);
+				background: rgba(8, 12, 24, 0.65);
+				overflow: hidden;
+			}
+
+			.drive-summary table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 0.82rem;
+			}
+
+			.drive-summary th,
+			.drive-summary td {
+				padding: 10px 12px;
+				border-bottom: 1px solid rgba(35, 215, 255, 0.14);
+				text-align: left;
+			}
+
+			.drive-summary th {
+				color: var(--muted);
+				font-weight: 600;
+				letter-spacing: 0.02em;
+				text-transform: uppercase;
+				font-size: 0.7rem;
+			}
+
+			.drive-summary td.value {
+				font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", "Courier New", monospace;
+				color: var(--ink);
+			}
+
+			.drive-summary tr:last-child td {
+				border-bottom: 0;
+			}
+
+			canvas {
+				width: 100%;
+				height: 300px;
+				border-radius: 14px;
+				background: var(--chart-bg);
+				border: 1px solid rgba(35, 215, 255, 0.2);
+				box-shadow: inset 0 0 0 1px rgba(255, 77, 219, 0.08);
+			}
+
+			.section-spacer {
+				margin-top: 32px;
+				padding-top: 24px;
+				border-top: 1px dashed rgba(35, 215, 255, 0.2);
+			}
+
+			.placeholder {
+				color: var(--muted);
+				font-size: 0.82rem;
+			}
+
+			.placeholder-panel {
+				display: grid;
+				place-items: center;
+				min-height: 160px;
+				background: repeating-linear-gradient(
+					135deg,
+					rgba(35, 215, 255, 0.08),
+					rgba(35, 215, 255, 0.08) 14px,
+					rgba(5, 6, 13, 0.8) 14px,
+					rgba(5, 6, 13, 0.8) 28px
+				);
+				border-radius: 18px;
+				border: 1px dashed rgba(35, 215, 255, 0.25);
+			}
+
+			@media (max-width: 900px) {
+				header {
+					flex-direction: column;
+					align-items: flex-start;
+				}
+
+				.header-actions {
+					width: 100%;
+				}
+
+				.header-actions select,
+				.header-actions button {
+					flex: 1 1 180px;
+				}
+
+				.layout {
+					grid-template-columns: 1fr;
+				}
+
+				.inputs-panel .input-grid {
+					grid-template-columns: 1fr;
+				}
+
+				canvas {
+					height: 240px;
+				}
+
+				.field-row {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			@keyframes riseIn {
+				from {
+					opacity: 0;
+					transform: translateY(12px);
+				}
+				to {
+					opacity: 1;
+					transform: translateY(0);
+				}
+			}
+
+			.panel,
+			canvas {
+				animation: riseIn 600ms ease-out;
+			}
+
+			@media (min-width: 901px) and (max-width: 1200px) {
+				.inputs-panel .input-grid {
+					grid-template-columns: repeat(2, minmax(0, 1fr));
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="page">
+			<header>
+				<div>
+					<h1 class="title">
+						<img class="title-icon" src="mask.png" alt="MASCE icon" />
+						<span>MASCE - Markus Autobahn Speed Calculator for EVs</span>
+					</h1>
+					<p class="subtitle">
+						Set all vehicle and charging inputs first, then compare both charts below.
+					</p>
+				</div>
+				<div class="header-actions">
+					<select id="carPreset" aria-label="Select car profile"></select>
+					<button id="loadPreset" type="button">Load</button>
+				</div>
+			</header>
+
+			<section>
+				<div class="panel inputs-panel">
+					<h2>Vehicle + Battery + User Inputs</h2>
+					<div class="input-grid">
+						<div class="input-group">
+							<p class="group-title">Vehicle</p>
+							<div class="field-row">
+								<div class="field">
+									<label for="cw">Cw (drag coefficient)</label>
+									<input id="cw" type="text" value="0.26" />
+								</div>
+								<div class="field">
+									<label for="area">A (frontal area in m²)</label>
+									<input id="area" type="text" value="2.9" />
+								</div>
+							</div>
+							<div class="field">
+								<label for="vmax">V max [km/h]</label>
+								<input id="vmax" type="text" value="300" />
+							</div>
+						</div>
+
+						<div class="input-group">
+							<p class="group-title">Battery</p>
+							<div class="field">
+								<label for="battery">Net battery capacity [kWh]</label>
+								<input id="battery" type="text" value="108" />
+							</div>
+							<p class="group-title">Charging curve</p>
+							<div class="field-row">
+								<div class="field">
+									<label for="kwMax">Charging power max [kW]</label>
+									<input id="kwMax" name="chargingPowerMaxKw" type="text" value="380" autocomplete="off" spellcheck="false" />
+									<span class="hint">Mean of maximum charging power before dip.</span>
+								</div>
+								<div class="field">
+									<label for="kwMaxUntil">kW max until [%]</label>
+									<input id="kwMaxUntil" name="chargingPowerMaxUntilPct" type="text" value="55" autocomplete="off" spellcheck="false" />
+									<span class="hint">After this SOC state, power falls linearly to 0 at 100%.</span>
+								</div>
+							</div>
+						</div>
+
+						<div class="input-group">
+							<p class="group-title">User entries <span class="user-badge">user entered</span></p>
+							<div class="field user-entry">
+								<label for="startDelay">Time to start/stop charging incl. on/offramp [s]</label>
+								<input id="startDelay" type="text" value="300" />
+							</div>
+							<p class="group-title">Offsets from physical consumption</p>
+							<div class="field-row">
+								<div class="field user-entry">
+									<label for="offsetPct">Optional offset [%]</label>
+									<input id="offsetPct" name="consumptionOffsetPct" type="text" value="10" autocomplete="off" spellcheck="false" />
+									<span class="hint">Adds a proportional lift to consumption.</span>
+								</div>
+								<div class="field user-entry">
+									<label for="offsetKw">Optional offset [kW]</label>
+									<input id="offsetKw" name="consumptionOffsetKw" type="text" value="0.4" autocomplete="off" spellcheck="false" />
+									<span class="hint">Adds a fixed power overhead.</span>
+								</div>
+							</div>
+							<p class="group-title">Charging window</p>
+							<div class="field-row">
+								<div class="field user-entry">
+									<label for="startSoc">Start SOC [%]</label>
+									<input id="startSoc" type="text" value="15" />
+								</div>
+								<div class="field user-entry">
+									<label for="endSoc">End SOC [%]</label>
+									<input id="endSoc" type="text" value="70" />
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="section-spacer">
+				<div class="layout">
+					<div class="panel plot-wrap">
+						<div>
+							<h2>Consumption vs Speed</h2>
+							<p class="subtitle">Speed in km/h, consumption in kWh per 100 km.</p>
+						</div>
+						<canvas id="chart" width="800" height="420"></canvas>
+						<div class="legend">
+							<span><i class="raw"></i> physical drag consumption [kWh/100 km]</span>
+							<span><i></i> with user offset [kWh/100 km]</span>
+						</div>
+					</div>
+					<div class="panel plot-wrap">
+						<div>
+							<h2>Drive + Charge Speed</h2>
+							<p class="subtitle">Normalized kilometers per hour over a drive/charge cycle.</p>
+						</div>
+						<canvas id="driveChart" width="800" height="420"></canvas>
+						<div class="legend">
+							<span><i></i> km per hour</span>
+						</div>
+						<div class="drive-summary">
+							<table aria-label="Drive and charge cycle summary">
+								<thead>
+									<tr>
+										<th>Optimal drive cycle info</th>
+										<th>Value</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td>Suggested driving speed [km/h]</td>
+										<td class="value" id="cycleSpeed">--</td>
+									</tr>
+									<tr>
+										<td>Drive time (end SOC to start SOC) [m]</td>
+										<td class="value" id="cycleDriveTime">--</td>
+									</tr>
+									<tr>
+										<td>Charge overhead (start/stop) [m]</td>
+										<td class="value" id="cycleOverhead">--</td>
+									</tr>
+									<tr>
+										<td>Charging time (curve) [m]</td>
+										<td class="value" id="cycleChargeTime">--</td>
+									</tr>
+									<tr>
+										<td>Driving share of total time [%]</td>
+										<td class="value" id="cycleDriveShare">--</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+
+		<script>
+			const inputs = {
+				cw: document.getElementById("cw"),
+				area: document.getElementById("area"),
+				vmax: document.getElementById("vmax"),
+				offsetPct: document.getElementById("offsetPct"),
+				offsetKw: document.getElementById("offsetKw"),
+				battery: document.getElementById("battery"),
+				startDelay: document.getElementById("startDelay"),
+				kwMax: document.getElementById("kwMax"),
+				kwMaxUntil: document.getElementById("kwMaxUntil"),
+				startSoc: document.getElementById("startSoc"),
+				endSoc: document.getElementById("endSoc"),
+			};
+			const canvas = document.getElementById("chart");
+			const ctx = canvas.getContext("2d");
+			const driveCanvas = document.getElementById("driveChart");
+			const driveCtx = driveCanvas.getContext("2d");
+			const carPresetSelect = document.getElementById("carPreset");
+			const loadPresetButton = document.getElementById("loadPreset");
+			const cycleSpeedCell = document.getElementById("cycleSpeed");
+			const cycleDriveTimeCell = document.getElementById("cycleDriveTime");
+			const cycleOverheadCell = document.getElementById("cycleOverhead");
+			const cycleChargeTimeCell = document.getElementById("cycleChargeTime");
+			const cycleDriveShareCell = document.getElementById("cycleDriveShare");
+
+			const constants = {
+				rho: 1.225,
+				mass: 1650,
+				crr: 0.012,
+				g: 9.81,
+				drivetrainEff: 0.9,
+			};
+
+			// Car profile data for presets.
+			const carProfiles = {
+				"Cayenne": {
+					cw: 0.26,
+					area: 2.9,
+					vmax: 290,
+					battery: 108,
+					kwMax: 380,
+					kwMaxUntil: 63,
+				},
+				"Taycan": {
+					cw: 0.22,
+					area: 2.3,
+					vmax: 260,
+					battery: 97,
+					kwMax: 270,
+					kwMaxUntil: 55,
+				},
+				"Macan": {
+					cw: 0.25,
+					area: 2.8,
+					vmax: 240,
+					battery: 95,
+					kwMax: 270,
+					kwMaxUntil: 55,
+				},
+				"ID.3": {
+					cw: 0.27,
+					area: 2.2,
+					vmax: 180,
+					battery: 77,
+					kwMax: 170,
+					kwMaxUntil: 30,
+				},
+				"ID.7": {
+					cw: 0.23,
+					area: 2.4,
+					vmax: 200,
+					battery: 86,
+					kwMax: 200,
+					kwMaxUntil: 50,
+				},
+				"Mercedes EQE": {
+					cw: 0.20,
+					area: 2.4,
+					vmax: 210,
+					battery: 90,
+					kwMax: 200,
+					kwMaxUntil: 50,
+				},
+				"Mercedes EQG": {
+					cw: 0.39,
+					area: 2.7,
+					vmax: 220,
+					battery: 100,
+					kwMax: 250,
+					kwMaxUntil: 60,
+				},
+				"AMG GT XX": {
+					cw: 0.198,
+					area: 2.24,
+					vmax: 360,
+					battery: 108,
+					kwMax: 800,
+					kwMaxUntil: 30,
+				},
+			};
+
+			function resizeCanvasToDisplaySize(canvasEl) {
+				const dpr = window.devicePixelRatio || 1;
+				const rect = canvasEl.getBoundingClientRect();
+				const nextWidth = Math.max(1, Math.round(rect.width * dpr));
+				const nextHeight = Math.max(1, Math.round(rect.height * dpr));
+				if (canvasEl.width !== nextWidth || canvasEl.height !== nextHeight) {
+					canvasEl.width = nextWidth;
+					canvasEl.height = nextHeight;
+				}
+			}
+
+			function populateCarProfiles(selectEl, profiles) {
+				selectEl.innerHTML = "";
+				Object.keys(profiles).forEach((name) => {
+					const option = document.createElement("option");
+					option.value = name;
+					option.textContent = name;
+					selectEl.appendChild(option);
+				});
+			}
+
+			function applyCarProfile(profile) {
+				if (!profile) return;
+				inputs.cw.value = profile.cw;
+				inputs.area.value = profile.area;
+				inputs.vmax.value = profile.vmax;
+				inputs.battery.value = profile.battery;
+				inputs.kwMax.value = profile.kwMax;
+				inputs.kwMaxUntil.value = profile.kwMaxUntil;
+			}
+
+			function parseNumber(value, fallback) {
+				if (!value) return fallback;
+				const normalized = value.replace(",", ".");
+				const parsed = Number.parseFloat(normalized);
+				return Number.isFinite(parsed) ? parsed : fallback;
+			}
+
+			function normalizeUserEntryDefaults() {
+				if (!inputs.offsetPct.value.trim()) {
+					inputs.offsetPct.value = "10";
+				}
+				if (!inputs.offsetKw.value.trim()) {
+					inputs.offsetKw.value = "0.4";
+				}
+			}
+
+			function getThemeColors() {
+				const styles = getComputedStyle(document.documentElement);
+				return {
+					chartGrid: styles.getPropertyValue("--chart-grid").trim(),
+					chartText: styles.getPropertyValue("--chart-text").trim(),
+					chartRaw: styles.getPropertyValue("--chart-raw").trim(),
+					chartLine: styles.getPropertyValue("--chart-line").trim(),
+					chartPeak: styles.getPropertyValue("--chart-peak").trim(),
+				};
+			}
+
+			function buildData() {
+				const cw = parseNumber(inputs.cw.value, 0.25);
+				const area = parseNumber(inputs.area.value, 2.85);
+				const vmaxInput = parseNumber(inputs.vmax.value, 140);
+				const vmax = Math.max(130, Math.min(400, vmaxInput));
+				const offsetPct = parseNumber(inputs.offsetPct.value, 0) / 100;
+				const offsetKw = parseNumber(inputs.offsetKw.value, 0);
+
+				const speeds = [];
+				const raw = [];
+				const adjusted = [];
+
+				for (let kmh = 10; kmh <= vmax; kmh += 2) {
+					const v = kmh / 3.6;
+					const fDrag = 0.5 * constants.rho * cw * area * v * v;
+					const fRoll = constants.mass * constants.g * constants.crr;
+					const powerW = (fDrag + fRoll) * v;
+					const powerKw = powerW / 1000 / constants.drivetrainEff;
+					const rawCons = (powerKw / kmh) * 100;
+					const adjustedPower = powerKw * (1 + offsetPct) + offsetKw;
+					const adjustedCons = (adjustedPower / kmh) * 100;
+
+					speeds.push(kmh);
+					raw.push(rawCons);
+					adjusted.push(adjustedCons);
+				}
+
+				return { speeds, raw, adjusted, vmax };
+			}
+
+			function interpolateConsumption(speeds, values, targetSpeed) {
+				if (targetSpeed <= speeds[0]) return values[0];
+				if (targetSpeed >= speeds[speeds.length - 1]) return values[values.length - 1];
+				for (let i = 0; i < speeds.length - 1; i += 1) {
+					const s0 = speeds[i];
+					const s1 = speeds[i + 1];
+					if (targetSpeed >= s0 && targetSpeed <= s1) {
+						const t = (targetSpeed - s0) / (s1 - s0);
+						return values[i] + (values[i + 1] - values[i]) * t;
+					}
+				}
+				return values[values.length - 1];
+			}
+
+			function getConsumptionSeries() {
+				const { speeds, adjusted } = buildData();
+				return {
+					speeds,
+					consumptionPer100Km: adjusted,
+				};
+			}
+
+			function getConsumptionAtSpeed(targetSpeed) {
+				const series = getConsumptionSeries();
+				return interpolateConsumption(series.speeds, series.consumptionPer100Km, targetSpeed);
+			}
+
+			function chargingTimeSeconds(startSoc, endSoc, capacityKwh, kwMax, kwMaxUntil) {
+				const start = Math.max(0, Math.min(100, startSoc));
+				const end = Math.max(start, Math.min(100, endSoc));
+				const plateauEnd = Math.max(0, Math.min(100, kwMaxUntil));
+				if (end <= start || capacityKwh <= 0 || kwMax <= 0) return 0;
+
+				const startKwh = (capacityKwh * start) / 100;
+				const endKwh = (capacityKwh * end) / 100;
+
+				const plateauEndKwh = (capacityKwh * plateauEnd) / 100;
+
+				let seconds = 0;
+				const plateauEnergy = Math.max(0, Math.min(endKwh, plateauEndKwh) - startKwh);
+				if (plateauEnergy > 0) {
+					seconds += (plateauEnergy / kwMax) * 3600;
+				}
+
+				const tailStartSoc = Math.max(start, plateauEnd);
+				const tailEnergy = Math.max(0, endKwh - Math.max(startKwh, plateauEndKwh));
+
+				if (tailEnergy > 0 && end < 100) {
+					const span = Math.max(0.0001, 100 - plateauEnd);
+					const factor = (capacityKwh / 100) * (span / kwMax);
+					const tailTime = factor * Math.log((100 - tailStartSoc) / (100 - end));
+					seconds += Math.max(0, tailTime) * 3600;
+				}
+
+				return seconds;
+			}
+			function formatDuration(seconds) {
+				if (!Number.isFinite(seconds) || seconds <= 0) return "0m";
+				const totalMinutes = Math.round(seconds / 60);
+				const hours = Math.floor(totalMinutes / 60);
+				const minutes = totalMinutes % 60;
+				if (hours <= 0) return `${minutes}m`;
+				if (minutes === 0) return `${hours}h`;
+				return `${hours}h ${minutes}m`;
+			}
+
+			function updateDriveChargeSummary(summary) {
+				if (!summary || !Number.isFinite(summary.speedKmh)) {
+					cycleSpeedCell.textContent = "--";
+					cycleDriveTimeCell.textContent = "--";
+					cycleOverheadCell.textContent = "--";
+					cycleChargeTimeCell.textContent = "--";
+					cycleDriveShareCell.textContent = "--";
+					return;
+				}
+				cycleSpeedCell.textContent = `${summary.speedKmh.toFixed(0)} km/h`;
+				cycleDriveTimeCell.textContent = formatDuration(summary.driveSeconds);
+				cycleOverheadCell.textContent = formatDuration(summary.overheadSeconds);
+				cycleChargeTimeCell.textContent = formatDuration(summary.chargeSeconds);
+				cycleDriveShareCell.textContent = `${summary.driveShare.toFixed(1)}%`;
+			}
+
+			function computeDriveChargeCurve(consumptionSeries, options) {
+				const { speeds: baseSpeeds, consumptionPer100Km } = consumptionSeries;
+				const speeds = [];
+				const kmPerHour = [];
+				const vmax = options.vmax;
+				const capacityKwh = options.capacityKwh;
+				const startDelay = options.startDelay;
+				const kwMax = options.kwMax;
+				const kwMaxUntil = options.kwMaxUntil;
+				const startSoc = options.startSoc;
+				const endSoc = options.endSoc;
+				const usableSoc = Math.max(0, endSoc - startSoc);
+				const energyKwh = (capacityKwh * usableSoc) / 100;
+
+				if (energyKwh <= 0) {
+					return { speeds: [20, vmax], kmPerHour: [0, 0] };
+				}
+
+				const chargeSeconds = chargingTimeSeconds(startSoc, endSoc, capacityKwh, kwMax, kwMaxUntil);
+
+				for (let kmh = 20; kmh <= vmax; kmh += 2) {
+					const consumption = interpolateConsumption(baseSpeeds, consumptionPer100Km, kmh);
+					if (consumption <= 0) continue;
+					const distanceKm = (energyKwh / consumption) * 100;
+					const driveHours = distanceKm / kmh;
+					const totalHours = driveHours + startDelay / 3600 + chargeSeconds / 3600;
+					const normalizedKmh = totalHours > 0 ? distanceKm / totalHours : 0;
+
+					speeds.push(kmh);
+					kmPerHour.push(normalizedKmh);
+				}
+
+				return { speeds, kmPerHour };
+			}
+
+			function updateDriveChargePlot() {
+				const consumptionSeries = getConsumptionSeries();
+				const capacityKwh = parseNumber(inputs.battery.value, 108);
+				const startDelay = parseNumber(inputs.startDelay.value, 180);
+				const kwMax = parseNumber(inputs.kwMax.value, 250);
+				const kwMaxUntil = parseNumber(inputs.kwMaxUntil.value, 45);
+				const startSoc = parseNumber(inputs.startSoc.value, 10);
+				const endSoc = parseNumber(inputs.endSoc.value, 70);
+				const vmaxInput = parseNumber(inputs.vmax.value, 140);
+				const vmax = Math.max(130, Math.min(400, vmaxInput));
+
+				const curve = computeDriveChargeCurve(consumptionSeries, {
+					capacityKwh,
+					startDelay,
+					kwMax,
+					kwMaxUntil,
+					startSoc,
+					endSoc,
+					vmax,
+				});
+
+				drawDriveChargeChart(curve, vmax);
+				const summary = getDriveChargeSummary(curve, consumptionSeries, {
+					capacityKwh,
+					startDelay,
+					kwMax,
+					kwMaxUntil,
+					startSoc,
+					endSoc,
+				});
+				updateDriveChargeSummary(summary);
+			}
+
+			function getDriveChargeSummary(curve, consumptionSeries, options) {
+				const { speeds, kmPerHour } = curve;
+				if (!speeds.length) return null;
+				let peakIndex = 0;
+				for (let i = 1; i < kmPerHour.length; i += 1) {
+					if (kmPerHour[i] > kmPerHour[peakIndex]) {
+						peakIndex = i;
+					}
+				}
+				const speedKmh = speeds[peakIndex];
+				const usableSoc = Math.max(0, options.endSoc - options.startSoc);
+				const energyKwh = (options.capacityKwh * usableSoc) / 100;
+				if (energyKwh <= 0 || speedKmh <= 0) return null;
+				const consumption = interpolateConsumption(
+					consumptionSeries.speeds,
+					consumptionSeries.consumptionPer100Km,
+					speedKmh
+				);
+				if (consumption <= 0) return null;
+				const distanceKm = (energyKwh / consumption) * 100;
+				const driveSeconds = (distanceKm / speedKmh) * 3600;
+				const chargeSeconds = chargingTimeSeconds(
+					options.startSoc,
+					options.endSoc,
+					options.capacityKwh,
+					options.kwMax,
+					options.kwMaxUntil
+				);
+				const overheadSeconds = Math.max(0, options.startDelay);
+				const totalSeconds = driveSeconds + overheadSeconds + chargeSeconds;
+				const driveShare = totalSeconds > 0 ? (driveSeconds / totalSeconds) * 100 : 0;
+				return {
+					speedKmh,
+					driveSeconds,
+					overheadSeconds,
+					chargeSeconds,
+					driveShare,
+				};
+			}
+
+			function drawDriveChargeChart(curve, vmax) {
+				resizeCanvasToDisplaySize(driveCanvas);
+				const { speeds, kmPerHour } = curve;
+				if (!speeds.length) {
+					driveCtx.clearRect(0, 0, driveCanvas.width, driveCanvas.height);
+					return;
+				}
+				const colors = getThemeColors();
+				let peakIndex = 0;
+				for (let i = 1; i < kmPerHour.length; i += 1) {
+					if (kmPerHour[i] > kmPerHour[peakIndex]) {
+						peakIndex = i;
+					}
+				}
+				const padding = { top: 26, right: 30, bottom: 42, left: 52 };
+				const w = driveCanvas.width;
+				const h = driveCanvas.height;
+				const plotW = w - padding.left - padding.right;
+				const plotH = h - padding.top - padding.bottom;
+				const maxValue = Math.max(1, ...kmPerHour) * 1.1;
+				const minValue = 0;
+
+				driveCtx.clearRect(0, 0, w, h);
+				driveCtx.fillStyle = "rgba(0, 0, 0, 0.12)";
+				driveCtx.fillRect(0, 0, w, h);
+
+				driveCtx.strokeStyle = colors.chartGrid;
+				driveCtx.lineWidth = 1;
+				for (let i = 0; i <= 5; i += 1) {
+					const y = padding.top + (plotH / 5) * i;
+					driveCtx.beginPath();
+					driveCtx.moveTo(padding.left, y);
+					driveCtx.lineTo(w - padding.right, y);
+					driveCtx.stroke();
+				}
+
+				driveCtx.fillStyle = colors.chartText;
+				driveCtx.font = "11px ui-monospace, 'SFMono-Regular', 'Cascadia Mono', 'Courier New', monospace";
+				driveCtx.textAlign = "right";
+				driveCtx.textBaseline = "middle";
+				for (let i = 0; i <= 5; i += 1) {
+					const value = maxValue - (maxValue / 5) * i;
+					const y = padding.top + (plotH / 5) * i;
+					driveCtx.fillText(value.toFixed(0), padding.left - 8, y);
+				}
+
+				driveCtx.textAlign = "center";
+				driveCtx.textBaseline = "top";
+				for (let i = 0; i <= 6; i += 1) {
+					const kmh = Math.round((vmax / 6) * i);
+					const x = padding.left + (plotW / 6) * i;
+					driveCtx.fillText(`${kmh}`, x, h - padding.bottom + 12);
+				}
+
+				driveCtx.save();
+				driveCtx.translate(16, h / 2);
+				driveCtx.rotate(-Math.PI / 2);
+				driveCtx.textAlign = "center";
+				driveCtx.textBaseline = "middle";
+				driveCtx.fillText("km per hour", 0, 0);
+				driveCtx.restore();
+
+				driveCtx.textAlign = "center";
+				driveCtx.textBaseline = "middle";
+				driveCtx.fillText("Speed (km/h)", padding.left + plotW / 2, h - 12);
+
+				const mapX = (kmh) =>
+					padding.left + ((kmh - speeds[0]) / (speeds[speeds.length - 1] - speeds[0])) * plotW;
+				const mapY = (value) =>
+					padding.top + (1 - (value - minValue) / (maxValue - minValue)) * plotH;
+
+				driveCtx.strokeStyle = colors.chartLine;
+				driveCtx.lineWidth = 4;
+				driveCtx.beginPath();
+				kmPerHour.forEach((value, i) => {
+					const x = mapX(speeds[i]);
+					const y = mapY(value);
+					if (i === 0) {
+						driveCtx.moveTo(x, y);
+					} else {
+						driveCtx.lineTo(x, y);
+					}
+				});
+				driveCtx.stroke();
+
+				const peakX = mapX(speeds[peakIndex]);
+				const peakY = mapY(kmPerHour[peakIndex]);
+				driveCtx.fillStyle = colors.chartPeak;
+				driveCtx.beginPath();
+				driveCtx.arc(peakX, peakY, 6, 0, Math.PI * 2);
+				driveCtx.fill();
+				driveCtx.strokeStyle = colors.chartLine;
+				driveCtx.lineWidth = 2;
+				driveCtx.beginPath();
+				driveCtx.arc(peakX, peakY, 6, 0, Math.PI * 2);
+				driveCtx.stroke();
+
+				driveCtx.fillStyle = colors.chartText;
+				driveCtx.font = "11px ui-monospace, 'SFMono-Regular', 'Cascadia Mono', 'Courier New', monospace";
+				driveCtx.textAlign = "left";
+				driveCtx.textBaseline = "bottom";
+				driveCtx.fillText(
+					`peak ${kmPerHour[peakIndex].toFixed(1)} km/h @ ${speeds[peakIndex]} km/h`,
+					Math.min(peakX + 10, w - padding.right - 140),
+					Math.max(peakY - 10, padding.top + 14)
+				);
+			}
+
+			function drawChart() {
+				resizeCanvasToDisplaySize(canvas);
+				const { speeds, raw, adjusted, vmax } = buildData();
+				const padding = { top: 26, right: 30, bottom: 42, left: 52 };
+				const w = canvas.width;
+				const h = canvas.height;
+				const plotW = w - padding.left - padding.right;
+				const plotH = h - padding.top - padding.bottom;
+				const colors = getThemeColors();
+
+				const maxValue = Math.max(...raw, ...adjusted) * 1.1;
+				const minValue = 0;
+
+				ctx.clearRect(0, 0, w, h);
+
+				ctx.fillStyle = "rgba(0, 0, 0, 0.12)";
+				ctx.fillRect(0, 0, w, h);
+
+				ctx.strokeStyle = colors.chartGrid;
+				ctx.lineWidth = 1;
+				for (let i = 0; i <= 5; i += 1) {
+					const y = padding.top + (plotH / 5) * i;
+					ctx.beginPath();
+					ctx.moveTo(padding.left, y);
+					ctx.lineTo(w - padding.right, y);
+					ctx.stroke();
+				}
+
+				ctx.fillStyle = colors.chartText;
+				ctx.font = "11px ui-monospace, 'SFMono-Regular', 'Cascadia Mono', 'Courier New', monospace";
+				ctx.textAlign = "right";
+				ctx.textBaseline = "middle";
+				for (let i = 0; i <= 5; i += 1) {
+					const value = maxValue - (maxValue / 5) * i;
+					const y = padding.top + (plotH / 5) * i;
+					ctx.fillText(value.toFixed(1), padding.left - 8, y);
+				}
+
+				ctx.textAlign = "center";
+				ctx.textBaseline = "top";
+				for (let i = 0; i <= 6; i += 1) {
+					const kmh = Math.round((vmax / 6) * i);
+					const x = padding.left + (plotW / 6) * i;
+					ctx.fillText(`${kmh}`, x, h - padding.bottom + 12);
+				}
+
+				ctx.save();
+				ctx.translate(16, h / 2);
+				ctx.rotate(-Math.PI / 2);
+				ctx.textAlign = "center";
+				ctx.textBaseline = "middle";
+				ctx.fillText("kWh / 100 km", 0, 0);
+				ctx.restore();
+
+				ctx.textAlign = "center";
+				ctx.textBaseline = "middle";
+				ctx.fillText("Speed (km/h)", padding.left + plotW / 2, h - 12);
+
+				const mapX = (kmh) =>
+					padding.left + ((kmh - speeds[0]) / (speeds[speeds.length - 1] - speeds[0])) * plotW;
+				const mapY = (value) =>
+					padding.top + (1 - (value - minValue) / (maxValue - minValue)) * plotH;
+
+				ctx.strokeStyle = colors.chartRaw;
+				ctx.lineWidth = 2;
+				ctx.setLineDash([6, 6]);
+				ctx.beginPath();
+				raw.forEach((value, i) => {
+					const x = mapX(speeds[i]);
+					const y = mapY(value);
+					if (i === 0) {
+						ctx.moveTo(x, y);
+					} else {
+						ctx.lineTo(x, y);
+					}
+				});
+				ctx.stroke();
+
+				ctx.setLineDash([]);
+				ctx.strokeStyle = colors.chartLine;
+				ctx.lineWidth = 4;
+				ctx.beginPath();
+				adjusted.forEach((value, i) => {
+					const x = mapX(speeds[i]);
+					const y = mapY(value);
+					if (i === 0) {
+						ctx.moveTo(x, y);
+					} else {
+						ctx.lineTo(x, y);
+					}
+				});
+				ctx.stroke();
+			}
+
+			Object.values(inputs).forEach((input) => {
+				input.addEventListener("input", () => {
+					drawChart();
+					updateDriveChargePlot();
+				});
+				input.addEventListener("change", () => {
+					drawChart();
+					updateDriveChargePlot();
+				});
+			});
+
+			loadPresetButton.addEventListener("click", () => {
+				applyCarProfile(carProfiles[carPresetSelect.value]);
+				drawChart();
+				updateDriveChargePlot();
+			});
+
+			populateCarProfiles(carPresetSelect, carProfiles);
+			const defaultProfileName = carProfiles["Cayenne"] ? "Cayenne" : Object.keys(carProfiles)[0];
+			carPresetSelect.value = defaultProfileName;
+			applyCarProfile(carProfiles[defaultProfileName]);
+			normalizeUserEntryDefaults();
+			drawChart();
+			updateDriveChargePlot();
+			window.addEventListener("resize", () => {
+				drawChart();
+				updateDriveChargePlot();
+			});
+		</script>
+	</body>
+</html>
