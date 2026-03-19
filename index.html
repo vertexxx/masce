@@ -604,6 +604,10 @@
 										<td class="value key-result" id="cycleSpeed">--</td>
 									</tr>
 									<tr>
+										<td>Sprint distance [km]</td>
+										<td class="value" id="cycleSprintDistance">--</td>
+									</tr>
+									<tr>
 										<td>Drive time (end SOC to start SOC) [m]</td>
 										<td class="value" id="cycleDriveTime">--</td>
 									</tr>
@@ -648,6 +652,7 @@
 			const carPresetSelect = document.getElementById("carPreset");
 			const loadPresetButton = document.getElementById("loadPreset");
 			const cycleSpeedCell = document.getElementById("cycleSpeed");
+			const cycleSprintDistanceCell = document.getElementById("cycleSprintDistance");
 			const cycleDriveTimeCell = document.getElementById("cycleDriveTime");
 			const cycleOverheadCell = document.getElementById("cycleOverhead");
 			const cycleChargeTimeCell = document.getElementById("cycleChargeTime");
@@ -886,6 +891,7 @@
 			function updateDriveChargeSummary(summary) {
 				if (!summary || !Number.isFinite(summary.speedKmh)) {
 					cycleSpeedCell.textContent = "--";
+					cycleSprintDistanceCell.textContent = "--";
 					cycleDriveTimeCell.textContent = "--";
 					cycleOverheadCell.textContent = "--";
 					cycleChargeTimeCell.textContent = "--";
@@ -893,6 +899,7 @@
 					return;
 				}
 				cycleSpeedCell.textContent = `${summary.speedKmh.toFixed(0)} km/h`;
+				cycleSprintDistanceCell.textContent = `${summary.sprintDistanceKm.toFixed(1)} km`;
 				cycleDriveTimeCell.textContent = formatDuration(summary.driveSeconds);
 				cycleOverheadCell.textContent = formatDuration(summary.overheadSeconds);
 				cycleChargeTimeCell.textContent = formatDuration(summary.chargeSeconds);
@@ -1000,6 +1007,7 @@
 				const driveShare = totalSeconds > 0 ? (driveSeconds / totalSeconds) * 100 : 0;
 				return {
 					speedKmh,
+					sprintDistanceKm: distanceKm,
 					driveSeconds,
 					overheadSeconds,
 					chargeSeconds,
