@@ -345,6 +345,18 @@
 				color: var(--ink);
 			}
 
+			.drive-summary td.value.key-result {
+				background: linear-gradient(120deg, rgba(35, 215, 255, 0.18), rgba(255, 77, 219, 0.18));
+				border-radius: 10px;
+				color: #7cf7ff;
+				font-size: 1.12rem;
+				font-weight: 800;
+				letter-spacing: 0.02em;
+				padding-left: 14px;
+				padding-right: 14px;
+				text-shadow: 0 0 12px rgba(35, 215, 255, 0.35);
+			}
+
 			.drive-summary tr:last-child td {
 				border-bottom: 0;
 			}
@@ -480,7 +492,7 @@
 
 			<section>
 				<div class="panel inputs-panel">
-					<h2>Vehicle + Battery + User Inputs</h2>
+					<h2>Vehicle / Battery / User charging inputs</h2>
 					<div class="input-grid">
 						<div class="input-group">
 							<p class="group-title">Vehicle</p>
@@ -524,19 +536,19 @@
 						<div class="input-group">
 							<p class="group-title">User entries <span class="user-badge">user entered</span></p>
 							<div class="field user-entry">
-								<label for="startDelay">Time to start/stop charging incl. on/offramp [s]</label>
+								<label for="startDelay">Time to start/stop charging incl. driving to charger [s]</label>
 								<input id="startDelay" type="text" value="300" />
 							</div>
 							<p class="group-title">Offsets from physical consumption</p>
 							<div class="field-row">
 								<div class="field user-entry">
 									<label for="offsetPct">Optional offset [%]</label>
-									<input id="offsetPct" name="consumptionOffsetPct" type="text" value="10" autocomplete="off" spellcheck="false" />
+									<input id="offsetPct" name="consumptionOffsetPct" type="text" value="15" autocomplete="off" spellcheck="false" />
 									<span class="hint">Adds a proportional lift to consumption.</span>
 								</div>
 								<div class="field user-entry">
 									<label for="offsetKw">Optional offset [kW]</label>
-									<input id="offsetKw" name="consumptionOffsetKw" type="text" value="4" autocomplete="off" spellcheck="false" />
+									<input id="offsetKw" name="consumptionOffsetKw" type="text" value="4.0" autocomplete="off" spellcheck="false" />
 									<span class="hint">Adds a fixed power overhead.</span>
 								</div>
 							</div>
@@ -589,7 +601,7 @@
 								<tbody>
 									<tr>
 										<td>Suggested driving speed [km/h]</td>
-										<td class="value" id="cycleSpeed">--</td>
+										<td class="value key-result" id="cycleSpeed">--</td>
 									</tr>
 									<tr>
 										<td>Drive time (end SOC to start SOC) [m]</td>
