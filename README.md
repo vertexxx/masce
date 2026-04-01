@@ -6,3 +6,6 @@ The tool determines the optimal cruising speed to maximize overall average trave
 Vehicle presets can be selected from the menu in the top-right corner.
 
 https://vertexxx.github.io/masce/
+
+<img width="1005" height="735" alt="image" src="https://github.com/user-attachments/assets/0c548b34-6884-4407-bada-3b2b073a943f" />
+
